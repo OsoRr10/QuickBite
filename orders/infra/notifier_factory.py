@@ -1,27 +1,24 @@
 import os
-<<<<<<< HEAD
-from .notifiers import RealEmailNotifier, MockEmailNotifier
-=======
-from orders.infra.notifiers import RealEmailNotifier, MockEmailNotifier
->>>>>>> 571b5ab (Implementación de modelos, builder, servicios y factory)
+from .notifiers import RealEmailNotifier, MockEmailNotifier, SMSNotifier
 
 
-class NotifierFactory:
+class NotificationFactory:
+    """
+    Factory para instanciar el notificador correcto según
+    el entorno (ENV_TYPE) o el canal requerido.
+    Desacopla el servicio de la implementación concreta.
+    """
 
     @staticmethod
-<<<<<<< HEAD
-    def create():
+    def get_notifier(channel: str = "email"):
         env = os.getenv("ENV_TYPE", "DEV")
 
-        if env == "PROD":
-            return RealEmailNotifier()
-        return MockEmailNotifier()
-=======
-    def get_notifier(type):
-        if type == "email":
-            return RealEmailNotifier()
-        elif type == "sms":
+        if channel == "email":
+            if env == "PROD":
+                return RealEmailNotifier()
             return MockEmailNotifier()
-        else:
-            raise ValueError("Invalid notifier type")
->>>>>>> 571b5ab (Implementación de modelos, builder, servicios y factory)
+
+        if channel == "sms":
+            return SMSNotifier()
+
+        raise ValueError(f"Unsupported notification channel: '{channel}'")

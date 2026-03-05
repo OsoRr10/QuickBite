@@ -1,58 +1,63 @@
+from decimal import Decimal
 from django.test import TestCase
-<<<<<<< HEAD
-
-# Create your tests here.
-=======
-from orders.models import Product, Restaurant, Category, Order, OrderItem
 from django.contrib.auth.models import User
 
-class ProductTestCase(TestCase):
+from orders.models import Product, Restaurant, Category, Order, OrderItem
+from orders.services import OrderService, PaymentService
+
+
+def make_product(name="Burger", price="10.00", stock=100):
+    restaurant = Restaurant.objects.create(
+        name="Test Restaurant", email="r@test.com",
+        phone="123", address="Calle 1", rating=5.0
+    )
+    category = Category.objects.create(name="Fast Food")
+    return Product.objects.create(
+        name=name, price=Decimal(price),
+        stock=stock, restaurant=restaurant, category=category
+    )
+
+
+class OrderServiceTest(TestCase):
+
     def setUp(self):
-        self.restaurant = Restaurant.objects.create(
-            name="Test Restaurant",
-            email="test@example.com",
-            phone="1234567890",
-            address="123 Test St",
-            rating=5.0
-        )
-        self.category = Category.objects.create(name="Test Category")
-        self.product = Product.objects.create(
-            name="Test Product",
-            price=10.0,
-            stock=100,
-            restaurant=self.restaurant,
-            category=self.category
-        )
+        self.user = User.objects.create_user(username="testuser", password="pass")
+        self.product = make_product()
 
-    def test_product_stock_validation(self):
+    def test_validate_stock_raises_when_insufficient(self):
         with self.assertRaises(ValueError):
-            self.product.validate_stock(200)
+            OrderService.validate_stock(self.product, 200)
 
-    def test_product_reduce_stock(self):
-        self.product.reduce_stock(10)
+    def test_reduce_stock(self):
+        OrderService.reduce_stock(self.product, 10)
+        self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 90)
 
-class OrderTestCase(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="password")
-        self.restaurant = Restaurant.objects.create(
-            name="Test Restaurant",
-            email="test@example.com",
-            phone="1234567890",
-            address="123 Test St",
-            rating=5.0
-        )
-        self.category = Category.objects.create(name="Test Category")
-        self.product = Product.objects.create(
-            name="Test Product",
-            price=10.0,
-            stock=100,
-            restaurant=self.restaurant,
-            category=self.category
-        )
-        self.order = Order.objects.create(user=self.user, discount=10)
+    def test_create_order_success(self):
+        order = OrderService.create_order(self.user, [(self.product, 2)])
+        self.assertEqual(order.status, "PENDING")
+        self.assertEqual(order.orderitem_set.count(), 1)
 
-    def test_order_total(self):
-        OrderItem.objects.create(order=self.order, product=self.product, quantity=2, unit_price=10.0)
-        self.assertEqual(self.order.calculate_total(), 18.0)  # 20 - 10% discount
->>>>>>> 571b5ab (Implementación de modelos, builder, servicios y factory)
+    def test_create_order_applies_discount(self):
+        order = OrderService.create_order(self.user, [(self.product, 2)], discount=10)
+        total = OrderService.calculate_order_total(order)
+        self.assertEqual(total, Decimal("18.00"))  # 20 - 10%
+
+    def test_create_order_empty_items_raises(self):
+        with self.assertRaises(ValueError):
+            OrderService.create_order(self.user, [])
+
+
+class PaymentServiceTest(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="payer", password="pass")
+        self.product = make_product()
+
+    def test_validate_payment_amount_raises_on_zero(self):
+        with self.assertRaises(ValueError):
+            PaymentService.validate_payment_amount(Decimal("0"))
+
+    def test_calculate_price_with_discount(self):
+        result = PaymentService.calculate_price_with_discount(Decimal("100"), Decimal("20"))
+        self.assertEqual(result, Decimal("80.00"))
