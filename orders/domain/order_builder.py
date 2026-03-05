@@ -3,6 +3,7 @@ from orders.models import Order, OrderItem
 
 class OrderBuilder:
 
+<<<<<<< HEAD
     def __init__(self):
         self._user = None
         self._items = []
@@ -39,11 +40,38 @@ class OrderBuilder:
 
             product.reduce_stock(quantity)
 
+=======
+    def __init__(self, user):
+        self.user = user
+        self.items = []
+        self.discount = 0
+
+    def add_item(self, product, quantity):
+        product.validate_stock(quantity)
+        self.items.append((product, quantity))
+        return self
+
+    def set_discount(self, discount):
+        self.discount = discount
+        return self
+
+    def build(self):
+        order = Order.objects.create(
+            user=self.user,
+            discount=self.discount
+        )
+
+        for product, quantity in self.items:
+>>>>>>> 571b5ab (Implementación de modelos, builder, servicios y factory)
             OrderItem.objects.create(
                 order=order,
                 product=product,
                 quantity=quantity,
                 unit_price=product.price
             )
+<<<<<<< HEAD
+=======
+            product.reduce_stock(quantity)
+>>>>>>> 571b5ab (Implementación de modelos, builder, servicios y factory)
 
         return order
