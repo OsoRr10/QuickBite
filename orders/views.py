@@ -1,25 +1,49 @@
-import json
-from django.views import View
-from django.http import JsonResponse
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
+from .serializers import OrderCreateSerializer, OrderOutputSerializer
 from .services import OrderService
 from .models import Product
 
 
-class CreateOrderView(View):
+class CreateOrderAPIView(APIView):
 
     def post(self, request):
 
-        data = json.loads(request.body)
-        service = OrderService()
+        serializer = OrderCreateSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        items_data = serializer.validated_data["items"]
+        discount = serializer.validated_data.get("discount", 0)
 
         items = []
-        for item in data["items"]:
-            product = Product.objects.get(id=item["product_id"])
-            items.append({
-                "product": product,
-                "quantity": item["quantity"]
-            })
 
-        order = service.create_order(request.user, items)
+        try:
+            for item in items_data:
+                product = Product.objects.get(id=item["product_id"])
+                items.append((product, item["quantity"]))
+        except Product.DoesNotExist:
+            return Response(
+                {"error": "Product not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        return JsonResponse({"order_id": order.id})
+        try:
+            order = OrderService.create_order(
+                request.user,
+                items,
+                discount
+            )
+
+            output_serializer = OrderOutputSerializer(order)
+
+            return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_409_CONFLICT
+            )
