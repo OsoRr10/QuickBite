@@ -46,7 +46,7 @@ class OrderService:
         OrderService.validate_stock(product, quantity)
         product.stock -= quantity
         product.save()
-
+    
     @staticmethod
     def create_order(user: User, items: list, discount: Decimal = 0) -> Order:
         """
@@ -82,11 +82,11 @@ class OrderService:
         notifier = NotificationFactory.get_notifier("email")
         notifier.send(
             recipient=user.email,
+            subject=f"QuickBite - Orden #{order.id} creada",
             message=f"Tu orden #{order.id} fue creada exitosamente."
         )
 
         return order
-
 
 # ============================================================
 # CART SERVICE  —  gestión del carrito de compras
