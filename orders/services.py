@@ -16,7 +16,7 @@ class OrderService:
             item.unit_price * item.quantity
             for item in order.orderitem_set.all()
         )
-        discount_amount = subtotal * (order.discount / 100)
+        discount_amount = subtotal * (Decimal(str(order.discount)) / Decimal("100"))
         return subtotal - discount_amount
 
     @staticmethod

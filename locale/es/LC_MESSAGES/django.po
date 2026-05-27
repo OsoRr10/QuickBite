@@ -1,0 +1,82 @@
+# QuickBite — Traducciones al Español
+# Generado para Entregable 2 — i18n con gettext
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+
+msgid "Welcome"
+msgstr "Bienvenido"
+
+msgid "Sign in with your Django account to place orders."
+msgstr "Inicia sesión con tu cuenta de Django para hacer pedidos."
+
+msgid "Username"
+msgstr "Usuario"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Sign In"
+msgstr "Entrar"
+
+msgid "Restaurants"
+msgstr "Restaurantes"
+
+msgid "Menu"
+msgstr "Menú"
+
+msgid "Cart"
+msgstr "Carrito"
+
+msgid "My Orders"
+msgstr "Mis Pedidos"
+
+msgid "Not authenticated"
+msgstr "No autenticado"
+
+msgid "Login"
+msgstr "Iniciar sesión"
+
+msgid "Logout"
+msgstr "Salir"
+
+msgid "All restaurants available on the platform"
+msgstr "Todos los restaurantes disponibles en la plataforma"
+
+msgid "Add products to your cart and place your order"
+msgstr "Agrega productos al carrito y realiza tu pedido"
+
+msgid "Review your order before confirming"
+msgstr "Revisa tu pedido antes de confirmar"
+
+msgid "Order Summary"
+msgstr "Resumen del pedido"
+
+msgid "Subtotal"
+msgstr "Subtotal"
+
+msgid "Discount %"
+msgstr "Descuento %"
+
+msgid "Apply"
+msgstr "Aplicar"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Confirm Order"
+msgstr "Confirmar Pedido"
+
+msgid "Order History"
+msgstr "Historial de todas tus órdenes"
+
+msgid "Chef's Inspiration"
+msgstr "Inspiración del Chef"
+
+msgid "Another recipe"
+msgstr "Otra receta"
+
+msgid "Loading..."
+msgstr "Cargando..."

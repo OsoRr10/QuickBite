@@ -1,0 +1,82 @@
+# QuickBite — English Translations
+# Generated for Entregable 2 — i18n with gettext
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+
+msgid "Welcome"
+msgstr "Welcome"
+
+msgid "Sign in with your Django account to place orders."
+msgstr "Sign in with your Django account to place orders."
+
+msgid "Username"
+msgstr "Username"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Sign In"
+msgstr "Sign In"
+
+msgid "Restaurants"
+msgstr "Restaurants"
+
+msgid "Menu"
+msgstr "Menu"
+
+msgid "Cart"
+msgstr "Cart"
+
+msgid "My Orders"
+msgstr "My Orders"
+
+msgid "Not authenticated"
+msgstr "Not authenticated"
+
+msgid "Login"
+msgstr "Login"
+
+msgid "Logout"
+msgstr "Logout"
+
+msgid "All restaurants available on the platform"
+msgstr "All restaurants available on the platform"
+
+msgid "Add products to your cart and place your order"
+msgstr "Add products to your cart and place your order"
+
+msgid "Review your order before confirming"
+msgstr "Review your order before confirming"
+
+msgid "Order Summary"
+msgstr "Order Summary"
+
+msgid "Subtotal"
+msgstr "Subtotal"
+
+msgid "Discount %"
+msgstr "Discount %"
+
+msgid "Apply"
+msgstr "Apply"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Confirm Order"
+msgstr "Confirm Order"
+
+msgid "Order History"
+msgstr "Order History"
+
+msgid "Chef's Inspiration"
+msgstr "Chef's Inspiration"
+
+msgid "Another recipe"
+msgstr "Another recipe"
+
+msgid "Loading..."
+msgstr "Loading..."

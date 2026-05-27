@@ -1,8 +1,45 @@
+{% load i18n %}
 <div class="section" id="section-products">
   <div class="sec-header">
-    <h2>Menú</h2>
-    <p>Agrega productos al carrito y realiza tu pedido</p>
+    <h2>{% trans "Menu" %}</h2>
+    <p>{% trans "Add products to your cart and place your order" %}</p>
   </div>
+
+  <!-- ── Inspiración del Chef (TheMealDB via Adapter) ──────────────────── -->
+  <div id="meal-inspiration" style="
+    background: linear-gradient(135deg, rgba(255,87,51,.08), rgba(255,179,71,.08));
+    border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px 24px; margin-bottom: 28px;
+    display: flex; gap: 20px; align-items: center;
+  ">
+    <div style="flex:1">
+      <div style="font-size:.72rem; color:var(--accent); font-weight:700;
+                  text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px;">
+        ✨ {% trans "Chef's Inspiration" %}
+      </div>
+      <div id="meal-name" style="font-family:'Syne',sans-serif; font-size:1.1rem;
+                                  font-weight:700; margin-bottom:4px;">{% trans "Loading..." %}</div>
+      <div id="meal-meta" style="font-size:.82rem; color:var(--muted); margin-bottom:10px;"></div>
+      <div id="meal-instructions" style="font-size:.83rem; color:var(--muted);
+                                          line-height:1.6; max-width:600px;"></div>
+    </div>
+    <div style="flex-shrink:0; display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+      <img id="meal-thumb" src="" alt="" style="
+        width:110px; height:110px; border-radius:12px;
+        object-fit:cover; display:none;
+      "/>
+      <button onclick="loadRandomMeal()" style="
+        background:none; border:1px solid var(--border); color:var(--muted);
+        padding:6px 14px; border-radius:99px; cursor:pointer;
+        font-size:.78rem; font-family:'DM Sans',sans-serif; transition:all .2s;
+      " onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        🎲 {% trans "Another recipe" %}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Grid de productos ─────────────────────────────────────────────── -->
   <div class="grid" id="products-grid">
     <div class="skeleton" style="height:180px"></div>
     <div class="skeleton" style="height:180px"></div>

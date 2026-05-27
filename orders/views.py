@@ -144,3 +144,37 @@ class CreateOrderAPIView(APIView):
             return Response(OrderOutputSerializer(order).data, status=status.HTTP_201_CREATED)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_409_CONFLICT)
+
+
+# ── RECETAS / API TERCEROS (Patrón Adapter) ────────────────────────────────
+import os as _os
+from .adapters.meal_adapter import MealAdapterFactory
+
+class MealSuggestionAPIView(APIView):
+    """
+    GET /api/meals/suggestion/?q=chicken
+    Busca una receta en TheMealDB usando el Patrón Adapter.
+    El frontend la muestra como "inspiración" para los productos.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query   = request.query_params.get('q', 'chicken')
+        env     = _os.getenv('ENV_TYPE', 'prod')
+        adapter = MealAdapterFactory.get_adapter(env)
+        meal    = adapter.get_meal_suggestion(query)
+        return Response(meal)
+
+
+class RandomMealAPIView(APIView):
+    """
+    GET /api/meals/random/
+    Retorna una receta aleatoria de TheMealDB.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        env     = _os.getenv('ENV_TYPE', 'prod')
+        adapter = MealAdapterFactory.get_adapter(env)
+        meal    = adapter.get_random_meal()
+        return Response(meal)

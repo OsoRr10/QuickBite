@@ -1,16 +1,31 @@
+{% load i18n %}
 <nav>
   <div class="logo">Quick<span>Bite</span></div>
 
   <div class="nav-tabs">
-    <button class="tab-btn" onclick="showSection('restaurants')">🍽 Restaurantes</button>
-    <button class="tab-btn" onclick="showSection('products')">🛒 Menú</button>
-    <button class="tab-btn" onclick="showSection('cart')">🧾 Carrito <span id="cart-count"></span></button>
-    <button class="tab-btn" onclick="showSection('orders')">📦 Mis Pedidos</button>
+    <button class="tab-btn" onclick="showSection('restaurants')">🍽 {% trans "Restaurants" %}</button>
+    <button class="tab-btn" onclick="showSection('products')">🛒 {% trans "Menu" %}</button>
+    <button class="tab-btn" onclick="showSection('cart')">🧾 {% trans "Cart" %} <span id="cart-count"></span></button>
+    <button class="tab-btn" onclick="showSection('orders')">📦 {% trans "My Orders" %}</button>
   </div>
 
   <div class="auth-area">
-    <span id="auth-status">No autenticado</span>
-    <button class="btn-sm btn-outline" onclick="showSection('login')" id="login-btn">Iniciar sesión</button>
-    <button class="btn-sm btn-primary" onclick="logout()" id="logout-btn" style="display:none">Salir</button>
+    <span id="auth-status">{% trans "Not authenticated" %}</span>
+    <button class="btn-sm btn-outline" onclick="showSection('login')" id="login-btn">{% trans "Login" %}</button>
+    <button class="btn-sm btn-primary" onclick="logout()" id="logout-btn" style="display:none">{% trans "Logout" %}</button>
+
+    <!-- Selector de idioma -->
+    <form action="{% url 'set_language' %}" method="post" style="display:inline">
+      {% csrf_token %}
+      <input name="next" type="hidden" value="{{ request.path }}">
+      <select name="language" onchange="this.form.submit()" style="
+        background: var(--surface); border: 1px solid var(--border);
+        color: var(--muted); padding: 5px 8px; border-radius: 8px;
+        font-size: .8rem; cursor: pointer; font-family: 'DM Sans', sans-serif;
+      ">
+        <option value="es" {% if LANGUAGE_CODE == 'es' %}selected{% endif %}>🇨🇴 ES</option>
+        <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>🇺🇸 EN</option>
+      </select>
+    </form>
   </div>
 </nav>

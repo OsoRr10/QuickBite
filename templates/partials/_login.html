@@ -1,15 +1,16 @@
+{% load i18n %}
 <div class="section" id="section-login">
   <div class="login-card">
-    <h2>Bienvenido 👋</h2>
-    <p>Inicia sesión con tu cuenta de Django para hacer pedidos.</p>
+    <h2>{% trans "Welcome" %} 👋</h2>
+    <p>{% trans "Sign in with your Django account to place orders." %}</p>
     <div class="field">
-      <label>Usuario</label>
+      <label>{% trans "Username" %}</label>
       <input type="text" id="username" placeholder="admin" />
     </div>
     <div class="field">
-      <label>Contraseña</label>
+      <label>{% trans "Password" %}</label>
       <input type="password" id="password" placeholder="••••••••" />
     </div>
-    <button class="btn-full" onclick="login()">Entrar</button>
+    <button class="btn-full" onclick="login()">{% trans "Sign In" %}</button>
   </div>
 </div>

@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev gcc curl \
+    libpq-dev gcc curl gettext \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -17,6 +17,5 @@ COPY . .
 
 EXPOSE 8000
 
-# collectstatic + migrate + gunicorn — todo en runtime, no en build time
-# (en build time no hay BD ni variables de entorno disponibles)
-CMD ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60"]
+# compilemessages compila los .po → .mo para i18n
+CMD ["sh", "-c", "python manage.py compilemessages && python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py seed && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60"]

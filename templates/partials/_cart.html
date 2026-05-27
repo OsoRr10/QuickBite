@@ -1,27 +1,28 @@
+{% load i18n %}
 <div class="section" id="section-cart">
   <div class="sec-header">
-    <h2>Carrito</h2>
-    <p>Revisa tu pedido antes de confirmar</p>
+    <h2>{% trans "Cart" %}</h2>
+    <p>{% trans "Review your order before confirming" %}</p>
   </div>
   <div class="cart-layout">
     <div id="cart-items-container"></div>
     <div class="order-summary">
-      <h3>Resumen del pedido</h3>
+      <h3>{% trans "Order Summary" %}</h3>
       <div id="summary-content">
         <div class="summary-row">
-          <span>Subtotal</span>
+          <span>{% trans "Subtotal" %}</span>
           <span id="s-subtotal">$0</span>
         </div>
         <div class="discount-input">
-          <input type="number" id="discount-pct" placeholder="Descuento %" min="0" max="100" />
-          <button class="btn-sm btn-outline" onclick="applyDiscount()">Aplicar</button>
+          <input type="number" id="discount-pct" placeholder="{% trans 'Discount %' %}" min="0" max="100" />
+          <button class="btn-sm btn-outline" onclick="applyDiscount()">{% trans "Apply" %}</button>
         </div>
         <div class="summary-row total">
-          <span>Total</span>
+          <span>{% trans "Total" %}</span>
           <span id="s-total">$0</span>
         </div>
       </div>
-      <button class="btn-full" onclick="checkout()" style="margin-top:16px">Confirmar Pedido</button>
+      <button class="btn-full" onclick="checkout()" style="margin-top:16px">{% trans "Confirm Order" %}</button>
     </div>
   </div>
 </div>

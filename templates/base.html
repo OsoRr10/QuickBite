@@ -241,7 +241,371 @@
 
 <div class="toast" id="toast"></div>
 
-{% block scripts %}{% endblock %}
+{% block scripts %}
+<script>
+// ── ESTADO GLOBAL ──────────────────────────────────────────────────────────
+let AUTH     = null;   // { username, password }
+let CART     = [];     // [{ id, name, price, qty }]
+let DISCOUNT = 0;
+
+const BASE = '/api';
+
+// ── AUTENTICACIÓN ──────────────────────────────────────────────────────────
+
+function headers() {
+  const h = { 'Content-Type': 'application/json' };
+  if (AUTH) {
+    h['Authorization'] = 'Basic ' + btoa(AUTH.username + ':' + AUTH.password);
+  }
+  return h;
+}
+
+async function login() {
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+
+  if (!u || !p) {
+    toast('Completa usuario y contraseña', 'error');
+    return;
+  }
+
+  const res = await fetch(BASE + '/orders/', {
+    headers: { 'Authorization': 'Basic ' + btoa(u + ':' + p) }
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    toast('Credenciales incorrectas', 'error');
+    return;
+  }
+
+  AUTH = { username: u, password: p };
+  document.getElementById('auth-status').textContent = `👤 ${u}`;
+  document.getElementById('login-btn').style.display  = 'none';
+  document.getElementById('logout-btn').style.display = 'block';
+  toast(`Bienvenido, ${u}!`, 'success');
+  showSection('restaurants');
+}
+
+function logout() {
+  AUTH = null;
+  CART = [];
+  document.getElementById('auth-status').textContent  = 'No autenticado';
+  document.getElementById('login-btn').style.display  = 'block';
+  document.getElementById('logout-btn').style.display = 'none';
+  updateCartCount();
+  showSection('login');
+}
+
+// ── NAVEGACIÓN ─────────────────────────────────────────────────────────────
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+  document.getElementById('section-' + name)?.classList.add('active');
+
+  // Resaltar botón activo en la nav
+  const labelMap = {
+    restaurants: 'restaurantes',
+    products:    'menú',
+    cart:        'carrito',
+    orders:      'pedido',
+  };
+  const keyword = labelMap[name] ?? name;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.toLowerCase().includes(keyword)) b.classList.add('active');
+  });
+
+  // Cargar datos según sección
+  if (name === 'restaurants') loadRestaurants();
+  if (name === 'products')    { loadProducts(); loadRandomMeal(); }
+  if (name === 'cart')        renderCart();
+  if (name === 'orders') {
+    if (!AUTH) { toast('Inicia sesión primero', 'error'); showSection('login'); return; }
+    loadOrders();
+  }
+}
+
+// ── RESTAURANTES ───────────────────────────────────────────────────────────
+// NOTA: este endpoint será servido por el microservicio Flask en la Entrega 2.
+// Nginx redirigirá /api/restaurants/ → Flask service.
+
+async function loadRestaurants() {
+  const grid = document.getElementById('restaurants-grid');
+  try {
+    const res  = await fetch(BASE + '/restaurants/', { headers: headers() });
+    const data = await res.json();
+
+    if (!data.length) {
+      grid.innerHTML = emptyState('🏪', 'Sin restaurantes', 'Agrega restaurantes desde el admin de Django');
+      return;
+    }
+
+    grid.innerHTML = data.map(r => `
+      <div class="rest-card">
+        <div class="rest-icon">🍔</div>
+        <div class="rest-info">
+          <h3>${r.name}</h3>
+          <p>${r.address}</p>
+          <p>${r.phone}</p>
+          <div class="stars">
+            ${'★'.repeat(Math.round(r.rating))}${'☆'.repeat(5 - Math.round(r.rating))}
+            ${r.rating.toFixed(1)}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    grid.innerHTML = emptyState('⚠️', 'Error al cargar', 'No se pudo conectar con el servidor');
+  }
+}
+
+// ── PRODUCTOS ──────────────────────────────────────────────────────────────
+
+async function loadProducts() {
+  const grid = document.getElementById('products-grid');
+  try {
+    const res  = await fetch(BASE + '/products/', { headers: headers() });
+    const data = await res.json();
+
+    if (!data.length) {
+      grid.innerHTML = emptyState('🍽', 'Sin productos', 'Agrega productos desde el admin de Django');
+      return;
+    }
+
+    grid.innerHTML = data.map(p => `
+      <div class="card">
+        <div class="card-badge">${p.category?.name ?? 'Sin categoría'}</div>
+        <h3>${p.name}</h3>
+        <p>${p.description || p.restaurant?.name || ''}</p>
+        <div class="card-footer">
+          <div>
+            <div class="price">$${parseFloat(p.price).toFixed(2)}</div>
+            <div class="stock">${p.stock} disponibles</div>
+          </div>
+          <button class="btn-add"
+            onclick="addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price})"
+            ${p.stock === 0 ? 'disabled' : ''}>
+            + Agregar
+          </button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    grid.innerHTML = emptyState('⚠️', 'Error al cargar', 'No se pudo conectar con el servidor');
+  }
+}
+
+// ── CARRITO (estado local) ─────────────────────────────────────────────────
+
+function addToCart(id, name, price) {
+  const existing = CART.find(i => i.id === id);
+  if (existing) {
+    existing.qty++;
+  } else {
+    CART.push({ id, name, price: parseFloat(price), qty: 1 });
+  }
+  updateCartCount();
+  toast(`"${name}" agregado al carrito 🛒`, 'success');
+}
+
+function updateQty(idx, val) {
+  CART[idx].qty = Math.max(1, parseInt(val) || 1);
+  renderCart();
+}
+
+function removeFromCart(idx) {
+  CART.splice(idx, 1);
+  updateCartCount();
+  renderCart();
+}
+
+function updateCartCount() {
+  const total = CART.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cart-count').textContent = total ? `(${total})` : '';
+}
+
+function applyDiscount() {
+  DISCOUNT = parseFloat(document.getElementById('discount-pct').value) || 0;
+  renderCart();
+  toast(`Descuento del ${DISCOUNT}% aplicado`, 'success');
+}
+
+function renderCart() {
+  const container = document.getElementById('cart-items-container');
+
+  if (!CART.length) {
+    container.innerHTML = emptyState('🧺', 'Carrito vacío', 'Agrega productos desde el Menú');
+    document.getElementById('s-subtotal').textContent = '$0';
+    document.getElementById('s-total').textContent    = '$0';
+    return;
+  }
+
+  const subtotal = CART.reduce((s, i) => s + i.price * i.qty, 0);
+  const total    = subtotal - (subtotal * DISCOUNT / 100);
+
+  document.getElementById('s-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+  document.getElementById('s-total').textContent    = `$${total.toFixed(2)}`;
+
+  container.innerHTML = `
+    <div class="cart-items-list">
+      ${CART.map((item, idx) => `
+        <div class="cart-item">
+          <div>
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-meta">$${item.price.toFixed(2)} c/u</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px">
+            <input
+              type="number" value="${item.qty}" min="1"
+              style="width:64px; background:var(--bg); border:1px solid var(--border);
+                     color:var(--text); padding:6px 10px; border-radius:8px;
+                     font-size:.9rem; text-align:center;"
+              onchange="updateQty(${idx}, this.value)"
+            />
+            <div class="cart-item-subtotal">$${(item.price * item.qty).toFixed(2)}</div>
+            <button
+              onclick="removeFromCart(${idx})"
+              style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem;"
+              title="Eliminar">✕</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function checkout() {
+  if (!AUTH) {
+    toast('Debes iniciar sesión para hacer pedidos', 'error');
+    showSection('login');
+    return;
+  }
+  if (!CART.length) {
+    toast('El carrito está vacío', 'error');
+    return;
+  }
+
+  const payload = {
+    items:    CART.map(i => ({ product_id: i.id, quantity: i.qty })),
+    discount: DISCOUNT,
+  };
+
+  const res  = await fetch(BASE + '/orders/create/', {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+
+  if (res.status === 201) {
+    CART = [];
+    DISCOUNT = 0;
+    updateCartCount();
+    document.getElementById('discount-pct').value = '';
+    toast(`✅ Orden #${data.id} creada! Total: $${data.total?.toFixed(2)}`, 'success');
+    showSection('orders');
+  } else {
+    toast(data.error || 'Error al crear la orden', 'error');
+  }
+}
+
+// ── ÓRDENES ────────────────────────────────────────────────────────────────
+
+async function loadOrders() {
+  const container = document.getElementById('orders-container');
+  try {
+    const res = await fetch(BASE + '/orders/', { headers: headers() });
+    if (res.status === 401) {
+      toast('Inicia sesión primero', 'error');
+      showSection('login');
+      return;
+    }
+    const data = await res.json();
+
+    if (!data.length) {
+      container.innerHTML = emptyState('📭', 'Sin pedidos', 'Haz tu primer pedido desde el Menú');
+      return;
+    }
+
+    container.innerHTML = data.map(o => `
+      <div class="order-card">
+        <div class="order-header">
+          <div class="order-id">Orden #${o.id}</div>
+          <div class="status-badge status-${o.status}">${o.status}</div>
+        </div>
+        <div class="order-items-list">
+          ${o.items.map(i => `${i.quantity}× ${i.product} — $${parseFloat(i.unit_price).toFixed(2)}`).join('<br>')}
+        </div>
+        <div class="order-total">Total: $${o.total?.toFixed(2) ?? '—'}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    container.innerHTML = emptyState('⚠️', 'Error al cargar', 'No se pudo conectar con el servidor');
+  }
+}
+
+// ── UTILIDADES ─────────────────────────────────────────────────────────────
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = `toast show ${type}`;
+  setTimeout(() => { el.className = 'toast'; }, 3000);
+}
+
+function emptyState(icon, title, subtitle) {
+  return `
+    <div class="empty">
+      <div class="icon">${icon}</div>
+      <h3>${title}</h3>
+      <p>${subtitle}</p>
+    </div>
+  `;
+}
+
+
+// ── RECETAS (Patrón Adapter — TheMealDB) ───────────────────────────────────
+
+async function loadRandomMeal() {
+  const nameEl  = document.getElementById('meal-name');
+  const metaEl  = document.getElementById('meal-meta');
+  const instrEl = document.getElementById('meal-instructions');
+  const thumbEl = document.getElementById('meal-thumb');
+  if (!nameEl) return;
+
+  nameEl.textContent  = 'Cargando...';
+  metaEl.textContent  = '';
+  instrEl.textContent = '';
+  thumbEl.style.display = 'none';
+
+  try {
+    const res  = await fetch('/api/meals/random/');
+    const meal = await res.json();
+
+    if (meal.error || !meal.name) {
+      nameEl.textContent = 'No se pudo cargar la receta';
+      return;
+    }
+
+    nameEl.textContent  = meal.name;
+    metaEl.textContent  = [meal.category, meal.origin].filter(Boolean).join(' · ');
+    instrEl.textContent = meal.instructions;
+
+    if (meal.thumbnail) {
+      thumbEl.src           = meal.thumbnail;
+      thumbEl.style.display = 'block';
+    }
+  } catch (e) {
+    nameEl.textContent = 'Sin conexión con TheMealDB';
+  }
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+showSection('login');
+
+</script>
+{% endblock %}
 
 </body>
 </html>
