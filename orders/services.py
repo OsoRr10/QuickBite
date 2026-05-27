@@ -3,17 +3,15 @@ from django.contrib.auth.models import User
 
 from .models import Order, OrderItem, Cart, CartItem, Payment, Product
 from .domain.order_builder import OrderBuilder
-from .infra.notifier_factory import NotificationFactory
 
 
 # ============================================================
-# ORDER SERVICE  —  orquesta la creación y gestión de órdenes
+# ORDER SERVICE
 # ============================================================
 class OrderService:
 
     @staticmethod
     def calculate_order_total(order: Order) -> Decimal:
-        """Calcula el total de la orden aplicando el descuento."""
         subtotal = sum(
             item.unit_price * item.quantity
             for item in order.orderitem_set.all()
@@ -23,7 +21,6 @@ class OrderService:
 
     @staticmethod
     def change_order_status(order: Order, new_status: str) -> Order:
-        """Valida y cambia el estado de una orden."""
         valid_statuses = [s[0] for s in Order.STATUS_CHOICES]
         if new_status not in valid_statuses:
             raise ValueError(f"Invalid status: {new_status}")
@@ -33,7 +30,6 @@ class OrderService:
 
     @staticmethod
     def validate_stock(product: Product, quantity: int):
-        """Lanza ValueError si no hay suficiente stock."""
         if quantity > product.stock:
             raise ValueError(
                 f"Not enough stock for '{product.name}'. "
@@ -42,28 +38,25 @@ class OrderService:
 
     @staticmethod
     def reduce_stock(product: Product, quantity: int):
-        """Descuenta el stock del producto tras validarlo."""
         OrderService.validate_stock(product, quantity)
         product.stock -= quantity
         product.save()
-    
+
     @staticmethod
     def create_order(user: User, items: list, discount: Decimal = 0) -> Order:
         """
-        Flujo principal de creación de orden:
-        1. Valida stock de todos los productos
+        Flujo de creación de orden:
+        1. Valida stock
         2. Construye la Order con el Builder
         3. Descuenta stock
-        4. Envía notificación
+        4. Encola notificación en Celery (asíncrono — no bloquea)
         """
         if not items:
             raise ValueError("La orden debe contener al menos un producto")
 
-        # Validar stock antes de modificar cualquier cosa
         for product, quantity in items:
             OrderService.validate_stock(product, quantity)
 
-        # Construir la Order con el Builder (patrón creacional)
         order = (
             OrderBuilder()
             .for_user(user)
@@ -74,22 +67,30 @@ class OrderService:
 
         order = order.build()
 
-        # Descontar stock solo una vez, aquí en el servicio
         for product, quantity in items:
             OrderService.reduce_stock(product, quantity)
 
-        # Notificar al usuario (Factory decide email real vs mock)
-        notifier = NotificationFactory.get_notifier("email")
-        notifier.send(
-            recipient=user.email,
-            subject=f"QuickBite - Orden #{order.id} creada",
-            message=f"Tu orden #{order.id} fue creada exitosamente."
-        )
+        # ── Notificación ASÍNCRONA vía Celery + Redis ──────────────────────
+        # .delay() encola la tarea y retorna inmediatamente.
+        # El usuario recibe el 201 sin esperar al email.
+        total = float(OrderService.calculate_order_total(order))
+        try:
+            from .tasks import send_order_notification
+            send_order_notification.delay(
+                order_id=order.id,
+                user_email=user.email or f"{user.username}@quickbite.local",
+                total=total,
+            )
+        except Exception:
+            # Si Redis no está disponible (ej: dev sin Docker),
+            # la orden igual se crea — solo falla la notificación.
+            pass
 
         return order
 
+
 # ============================================================
-# CART SERVICE  —  gestión del carrito de compras
+# CART SERVICE
 # ============================================================
 class CartService:
 
@@ -127,7 +128,7 @@ class CartService:
 
 
 # ============================================================
-# PAYMENT SERVICE  —  gestión de pagos
+# PAYMENT SERVICE
 # ============================================================
 class PaymentService:
 
@@ -163,13 +164,16 @@ class PaymentService:
         payment.confirmed = True
         payment.save()
 
-        # Notificar confirmación de pago
-        notifier = NotificationFactory.get_notifier("email")
-        notifier.send(
-            recipient=payment.order.user.email,
-            message=f"Tu pago para la orden #{payment.order.id} fue confirmado."
-        )
+        # Notificación de pago también asíncrona
+        try:
+            from .tasks import send_payment_notification
+            send_payment_notification.delay(
+                order_id=payment.order.id,
+                user_email=payment.order.user.email,
+                amount=float(payment.amount),
+            )
+        except Exception:
+            pass
 
-        # Avanzar estado de la orden
         OrderService.change_order_status(payment.order, "CONFIRMED")
         return payment

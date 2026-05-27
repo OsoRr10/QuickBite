@@ -1,3 +1,16 @@
+"""
+views.py — Monolito Django (QuickBite)
+---------------------------------------
+PATRÓN ESTRANGULADOR aplicado:
+  - /api/restaurants/  → migrado al microservicio Flask (services/restaurants/)
+                         Nginx redirige ese path ANTES de llegar aquí.
+                         La vista RestaurantListAPIView se conserva como
+                         FALLBACK INTERNO (por si Nginx no está activo en dev).
+
+  Los demás endpoints (productos, carrito, órdenes) siguen aquí
+  hasta que sean migrados en iteraciones futuras.
+"""
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,7 +25,44 @@ from .services import OrderService, CartService
 from .models import Product, Restaurant, Order, Cart
 
 
-# ── PRODUCTOS ──────────────────────────────────────
+# ── SISTEMA INFO (endpoint propio para el equipo aliado) ───────────────────
+class SystemInfoAPIView(APIView):
+    """
+    GET /api/info/
+    Expone metadata del sistema para integración con el equipo aliado.
+    Requerimiento 2.3: "Exponga un endpoint JSON con información relevante".
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({
+            'service':     'QuickBite',
+            'version':     '2.0.0',
+            'description': 'Plataforma de pedidos de comida rápida',
+            'endpoints': {
+                'restaurants': '/api/restaurants/',  # servido por Flask
+                'products':    '/api/products/',
+                'orders':      '/api/orders/',
+            },
+            'team': 'QuickBite Team',
+        })
+
+
+# ── RESTAURANTES (fallback — en producción Nginx redirige a Flask) ─────────
+class RestaurantListAPIView(APIView):
+    """
+    NOTA: En producción este endpoint nunca se alcanza.
+    Nginx intercepta /api/restaurants/ y lo envía al microservicio Flask.
+    Esta vista existe sólo como fallback para desarrollo sin Docker.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        restaurants = Restaurant.objects.all()
+        return Response(RestaurantSerializer(restaurants, many=True).data)
+
+
+# ── PRODUCTOS ──────────────────────────────────────────────────────────────
 class ProductListAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -21,26 +71,17 @@ class ProductListAPIView(APIView):
         return Response(ProductSerializer(products, many=True).data)
 
 
-# ── RESTAURANTES ───────────────────────────────────
-class RestaurantListAPIView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        restaurants = Restaurant.objects.all()
-        return Response(RestaurantSerializer(restaurants, many=True).data)
-
-
-# ── CARRITO ────────────────────────────────────────
+# ── CARRITO ────────────────────────────────────────────────────────────────
 class CartAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        cart = CartService.get_or_create_cart(request.user)
+        cart  = CartService.get_or_create_cart(request.user)
         items = cart.cartitem_set.select_related('product').all()
         total = CartService.calculate_cart_total(cart)
         return Response({
             'items': CartItemOutputSerializer(items, many=True).data,
-            'total': float(total)
+            'total': float(total),
         })
 
     def post(self, request):
@@ -54,20 +95,25 @@ class CartAPIView(APIView):
             return Response({'error': 'Producto no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            item = CartService.add_item_to_cart(
+            CartService.add_item_to_cart(
                 request.user, product, serializer.validated_data['quantity']
             )
-            return Response({'message': f'"{product.name}" agregado al carrito'}, status=status.HTTP_201_CREATED)
+            return Response(
+                {'message': f'"{product.name}" agregado al carrito'},
+                status=status.HTTP_201_CREATED,
+            )
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_409_CONFLICT)
 
 
-# ── ÓRDENES ────────────────────────────────────────
+# ── ÓRDENES ────────────────────────────────────────────────────────────────
 class OrderListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        orders = Order.objects.filter(user=request.user).prefetch_related('orderitem_set__product')
+        orders = Order.objects.filter(
+            user=request.user
+        ).prefetch_related('orderitem_set__product')
         return Response(OrderOutputSerializer(orders, many=True).data)
 
 
@@ -80,7 +126,7 @@ class CreateOrderAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         items_data = serializer.validated_data['items']
-        discount = serializer.validated_data.get('discount', 0)
+        discount   = serializer.validated_data.get('discount', 0)
 
         items = []
         for item in items_data:
@@ -90,7 +136,7 @@ class CreateOrderAPIView(APIView):
             except Product.DoesNotExist:
                 return Response(
                     {'error': f'Producto con id {item["product_id"]} no encontrado'},
-                    status=status.HTTP_404_NOT_FOUND
+                    status=status.HTTP_404_NOT_FOUND,
                 )
 
         try:

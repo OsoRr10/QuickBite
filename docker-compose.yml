@@ -1,37 +1,126 @@
-version: "3.9"
-
 services:
 
-  # ── Monolito Django ──────────────────────────────────────
-  django_web:
+  # ── Base de datos ──────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: quickbite_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       quickbite
+      POSTGRES_USER:     quickbite
+      POSTGRES_PASSWORD: quickbite
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quickbite"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (Message Broker para Celery) ────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: quickbite_redis
+    restart: unless-stopped
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Monolito Django ────────────────────────────────────────────────────
+  django:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: quickbite_django
-    volumes:
-      - .:/app
+    restart: unless-stopped
     environment:
-      - ENV_TYPE=DEV
+      DB_TYPE:     postgres
+      DB_HOST:     db
+      DB_PORT:     5432
+      DB_NAME:     quickbite
+      DB_USER:     quickbite
+      DB_PASSWORD: quickbite
+      REDIS_URL:   redis://redis:6379/0
+      DEBUG:       "false"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - static_files:/app/staticfiles
     expose:
       - "8000"
 
-  # ── Microservicio Flask (Pagos) ──────────────────────────
-  flask_payment:
+  # ── Celery Worker ──────────────────────────────────────────────────────
+  celery:
     build:
-      context: ./flask_payment_service
+      context: .
       dockerfile: Dockerfile
-    container_name: quickbite_payment
-    expose:
-      - "5000"
+    container_name: quickbite_celery
+    restart: unless-stopped
+    # Mismo Dockerfile que Django — distinto comando de arranque
+    command: celery -A config worker --loglevel=info --concurrency=2
+    environment:
+      DB_TYPE:     postgres
+      DB_HOST:     db
+      DB_PORT:     5432
+      DB_NAME:     quickbite
+      DB_USER:     quickbite
+      DB_PASSWORD: quickbite
+      REDIS_URL:   redis://redis:6379/0
+      DEBUG:       "false"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # ── Nginx (enrutador de tráfico) ─────────────────────────
+  # ── Microservicio Flask: Restaurantes ──────────────────────────────────
+  restaurants:
+    build:
+      context: ./services/restaurants
+      dockerfile: Dockerfile
+    container_name: quickbite_restaurants
+    restart: unless-stopped
+    environment:
+      DB_TYPE:     postgres
+      DB_HOST:     db
+      DB_PORT:     5432
+      DB_NAME:     quickbite
+      DB_USER:     quickbite
+      DB_PASSWORD: quickbite
+      PORT:        5001
+      DEBUG:       "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "5001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── Nginx API Gateway ──────────────────────────────────────────────────
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: quickbite_nginx
+    restart: unless-stopped
     ports:
       - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_files:/app/staticfiles:ro
     depends_on:
-      - django_web
-      - flask_payment
+      - django
+      - restaurants
+
+volumes:
+  postgres_data:
+  static_files:

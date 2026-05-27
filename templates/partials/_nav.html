@@ -1,0 +1,16 @@
+<nav>
+  <div class="logo">Quick<span>Bite</span></div>
+
+  <div class="nav-tabs">
+    <button class="tab-btn" onclick="showSection('restaurants')">🍽 Restaurantes</button>
+    <button class="tab-btn" onclick="showSection('products')">🛒 Menú</button>
+    <button class="tab-btn" onclick="showSection('cart')">🧾 Carrito <span id="cart-count"></span></button>
+    <button class="tab-btn" onclick="showSection('orders')">📦 Mis Pedidos</button>
+  </div>
+
+  <div class="auth-area">
+    <span id="auth-status">No autenticado</span>
+    <button class="btn-sm btn-outline" onclick="showSection('login')" id="login-btn">Iniciar sesión</button>
+    <button class="btn-sm btn-primary" onclick="logout()" id="logout-btn" style="display:none">Salir</button>
+  </div>
+</nav>

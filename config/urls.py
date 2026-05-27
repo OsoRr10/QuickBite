@@ -6,4 +6,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('orders.urls')),
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    # Index.html (mayúscula) es el monolito original — conservado como backup
 ]

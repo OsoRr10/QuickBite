@@ -50,12 +50,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+import os as _os
+
+# PostgreSQL en Docker/AWS; SQLite para desarrollo local sin Docker
+if _os.getenv('DB_TYPE') == 'postgres':
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.postgresql',
+            'NAME':     _os.getenv('DB_NAME',     'quickbite'),
+            'USER':     _os.getenv('DB_USER',     'quickbite'),
+            'PASSWORD': _os.getenv('DB_PASSWORD', 'quickbite'),
+            'HOST':     _os.getenv('DB_HOST',     'db'),
+            'PORT':     _os.getenv('DB_PORT',     '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -76,3 +91,14 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+# ── Celery + Redis ─────────────────────────────────────────────────────────
+REDIS_URL = _os.getenv('REDIS_URL', 'redis://redis:6379/0')
+
+CELERY_BROKER_URL        = REDIS_URL
+CELERY_RESULT_BACKEND    = REDIS_URL
+CELERY_ACCEPT_CONTENT    = ['json']
+CELERY_TASK_SERIALIZER   = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE          = 'UTC'
