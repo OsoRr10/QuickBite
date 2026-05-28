@@ -44,6 +44,7 @@ services:
       DB_NAME:     quickbite
       DB_USER:     quickbite
       DB_PASSWORD: quickbite
+      ALLY_URL:    https://jsonplaceholder.typicode.com/todos/1
       REDIS_URL:   redis://redis:6379/0
       DEBUG:       "false"
     depends_on:
@@ -72,6 +73,7 @@ services:
       DB_NAME:     quickbite
       DB_USER:     quickbite
       DB_PASSWORD: quickbite
+      ALLY_URL:    https://jsonplaceholder.typicode.com/todos/1
       REDIS_URL:   redis://redis:6379/0
       DEBUG:       "false"
     depends_on:

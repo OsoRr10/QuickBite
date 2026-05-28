@@ -233,6 +233,8 @@
 </head>
 <body>
 
+{% load i18n %}
+
 {% include "partials/_nav.html" %}
 
 <main>
@@ -244,13 +246,79 @@
 {% block scripts %}
 <script>
 // ── ESTADO GLOBAL ──────────────────────────────────────────────────────────
-let AUTH     = null;   // { username, password }
-let CART     = [];     // [{ id, name, price, qty }]
-let DISCOUNT = 0;
+let AUTH            = null;   // { username, password }
+let CART            = [];     // [{ id, name, price, qty }]
+let DISCOUNT        = 0;
+let CURRENT_SECTION = 'login';
 
 const BASE = '/api';
 
+// ── I18N (strings usados en JS) ───────────────────────────────────────────
+const I18N = {
+  login_required: "{% trans 'Debes iniciar sesión para hacer pedidos' %}",
+  login_first: "{% trans 'Inicia sesión primero' %}",
+  credentials_wrong: "{% trans 'Credenciales incorrectas' %}",
+  fill_credentials: "{% trans 'Completa usuario y contraseña' %}",
+  welcome_tpl: "{% trans 'Bienvenido, __USER__!' %}",
+  added_to_cart: "{% trans 'agregado al carrito' %}",
+  discount_applied: "{% trans 'Descuento del __PCT__% aplicado' %}",
+  loading: "{% trans 'Cargando...' %}",
+  meal_load_error: "{% trans 'No se pudo cargar la receta' %}",
+  meal_offline: "{% trans 'Sin conexión con TheMealDB' %}",
+  error_connect: "{% trans 'No se pudo conectar con el servidor' %}",
+  cart_empty: "{% trans 'Carrito vacío' %}",
+  order_created_tpl: "{% trans '✅ Orden #__ID__ creada! Total: $__TOTAL__' %}",
+};
+
 // ── AUTENTICACIÓN ──────────────────────────────────────────────────────────
+
+function saveAuth() {
+  if (!AUTH) {
+    sessionStorage.removeItem('quickbiteAuth');
+    localStorage.removeItem('quickbiteAuth');
+    return;
+  }
+
+  const json = JSON.stringify(AUTH);
+  sessionStorage.setItem('quickbiteAuth', json);
+  localStorage.setItem('quickbiteAuth', json);
+}
+
+function restoreAuth() {
+  try {
+    const stored = sessionStorage.getItem('quickbiteAuth') || localStorage.getItem('quickbiteAuth');
+    if (!stored) return;
+
+    AUTH = JSON.parse(stored);
+    if (AUTH?.username) {
+      document.getElementById('auth-status').textContent = `👤 ${AUTH.username}`;
+      document.getElementById('login-btn').style.display  = 'none';
+      document.getElementById('logout-btn').style.display = 'block';
+    }
+  } catch (error) {
+    console.warn('No se pudo restaurar sesión:', error);
+  }
+}
+
+function saveSection() {
+  if (!CURRENT_SECTION) {
+    sessionStorage.removeItem('quickbiteSection');
+    localStorage.removeItem('quickbiteSection');
+    return;
+  }
+
+  sessionStorage.setItem('quickbiteSection', CURRENT_SECTION);
+  localStorage.setItem('quickbiteSection', CURRENT_SECTION);
+}
+
+function restoreSection() {
+  try {
+    return sessionStorage.getItem('quickbiteSection') || localStorage.getItem('quickbiteSection');
+  } catch (error) {
+    console.warn('No se pudo restaurar la sección activa:', error);
+    return null;
+  }
+}
 
 function headers() {
   const h = { 'Content-Type': 'application/json' };
@@ -265,7 +333,7 @@ async function login() {
   const p = document.getElementById('password').value;
 
   if (!u || !p) {
-    toast('Completa usuario y contraseña', 'error');
+    toast(I18N.fill_credentials, 'error');
     return;
   }
 
@@ -274,20 +342,22 @@ async function login() {
   });
 
   if (res.status === 401 || res.status === 403) {
-    toast('Credenciales incorrectas', 'error');
+    toast(I18N.credentials_wrong, 'error');
     return;
   }
 
   AUTH = { username: u, password: p };
+  saveAuth();
   document.getElementById('auth-status').textContent = `👤 ${u}`;
   document.getElementById('login-btn').style.display  = 'none';
   document.getElementById('logout-btn').style.display = 'block';
-  toast(`Bienvenido, ${u}!`, 'success');
+  toast(I18N.welcome_tpl.replace('__USER__', u), 'success');
   showSection('restaurants');
 }
 
 function logout() {
   AUTH = null;
+  saveAuth();
   CART = [];
   document.getElementById('auth-status').textContent  = 'No autenticado';
   document.getElementById('login-btn').style.display  = 'block';
@@ -296,9 +366,19 @@ function logout() {
   showSection('login');
 }
 
+function initializeApp() {
+  restoreAuth();
+  const initialSection = restoreSection() || (AUTH ? 'restaurants' : 'login');
+  showSection(initialSection);
+  loadAllyInfo();
+}
+
 // ── NAVEGACIÓN ─────────────────────────────────────────────────────────────
 
 function showSection(name) {
+  CURRENT_SECTION = name;
+  saveSection();
+
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
@@ -321,7 +401,7 @@ function showSection(name) {
   if (name === 'products')    { loadProducts(); loadRandomMeal(); }
   if (name === 'cart')        renderCart();
   if (name === 'orders') {
-    if (!AUTH) { toast('Inicia sesión primero', 'error'); showSection('login'); return; }
+    if (!AUTH) { toast(I18N.login_first, 'error'); showSection('login'); return; }
     loadOrders();
   }
 }
@@ -356,7 +436,7 @@ async function loadRestaurants() {
       </div>
     `).join('');
   } catch (e) {
-    grid.innerHTML = emptyState('⚠️', 'Error al cargar', 'No se pudo conectar con el servidor');
+    grid.innerHTML = emptyState('⚠️', 'Error al cargar', I18N.error_connect);
   }
 }
 
@@ -392,7 +472,7 @@ async function loadProducts() {
       </div>
     `).join('');
   } catch (e) {
-    grid.innerHTML = emptyState('⚠️', 'Error al cargar', 'No se pudo conectar con el servidor');
+    grid.innerHTML = emptyState('⚠️', 'Error al cargar', I18N.error_connect);
   }
 }
 
@@ -406,7 +486,7 @@ function addToCart(id, name, price) {
     CART.push({ id, name, price: parseFloat(price), qty: 1 });
   }
   updateCartCount();
-  toast(`"${name}" agregado al carrito 🛒`, 'success');
+  toast(`"${name}" ${I18N.added_to_cart} 🛒`, 'success');
 }
 
 function updateQty(idx, val) {
@@ -477,7 +557,7 @@ function renderCart() {
 
 async function checkout() {
   if (!AUTH) {
-    toast('Debes iniciar sesión para hacer pedidos', 'error');
+    toast(I18N.login_required, 'error');
     showSection('login');
     return;
   }
@@ -503,10 +583,11 @@ async function checkout() {
     DISCOUNT = 0;
     updateCartCount();
     document.getElementById('discount-pct').value = '';
-    toast(`✅ Orden #${data.id} creada! Total: $${data.total?.toFixed(2)}`, 'success');
+    const msg = I18N.order_created_tpl.replace('__ID__', data.id).replace('__TOTAL__', (data.total || 0).toFixed(2));
+    toast(msg, 'success');
     showSection('orders');
   } else {
-    toast(data.error || 'Error al crear la orden', 'error');
+    toast(data.error || I18N.error_connect, 'error');
   }
 }
 
@@ -517,7 +598,7 @@ async function loadOrders() {
   try {
     const res = await fetch(BASE + '/orders/', { headers: headers() });
     if (res.status === 401) {
-      toast('Inicia sesión primero', 'error');
+      toast(I18N.login_first, 'error');
       showSection('login');
       return;
     }
@@ -541,7 +622,7 @@ async function loadOrders() {
       </div>
     `).join('');
   } catch (e) {
-    container.innerHTML = emptyState('⚠️', 'Error al cargar', 'No se pudo conectar con el servidor');
+    container.innerHTML = emptyState('⚠️', 'Error al cargar', I18N.error_connect);
   }
 }
 
@@ -574,7 +655,7 @@ async function loadRandomMeal() {
   const thumbEl = document.getElementById('meal-thumb');
   if (!nameEl) return;
 
-  nameEl.textContent  = 'Cargando...';
+  nameEl.textContent  = I18N.loading;
   metaEl.textContent  = '';
   instrEl.textContent = '';
   thumbEl.style.display = 'none';
@@ -584,7 +665,7 @@ async function loadRandomMeal() {
     const meal = await res.json();
 
     if (meal.error || !meal.name) {
-      nameEl.textContent = 'No se pudo cargar la receta';
+      nameEl.textContent = I18N.meal_load_error;
       return;
     }
 
@@ -597,12 +678,29 @@ async function loadRandomMeal() {
       thumbEl.style.display = 'block';
     }
   } catch (e) {
-    nameEl.textContent = 'Sin conexión con TheMealDB';
+    nameEl.textContent = I18N.meal_offline;
+  }
+}
+
+// ── ALIANZA: consumo de servicio aliado y visualización en la nav ───────
+async function loadAllyInfo() {
+  const el = document.getElementById('ally-info');
+  if (!el) return;
+  try {
+    const res = await fetch(BASE + '/ally/info/');
+    if (!res.ok) { el.textContent = 'Ally: offline'; return; }
+    const data = await res.json();
+    // Mostrar datos básicos si existen
+    const name = data.service || data.name || 'Ally';
+    const status = data.status || data.state || 'ok';
+    el.textContent = `${name} (${status})`;
+  } catch (e) {
+    el.textContent = 'Ally: offline';
   }
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────
-showSection('login');
+document.addEventListener('DOMContentLoaded', initializeApp);
 
 </script>
 {% endblock %}
