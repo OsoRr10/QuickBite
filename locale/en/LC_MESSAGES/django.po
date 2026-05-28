@@ -128,3 +128,18 @@ msgstr "The cart is empty"
 
 msgid "Eliminar"
 msgstr "Delete"
+
+msgid "Agrega productos desde el Menú"
+msgstr "Add products from the Menu"
+
+msgid "Sin pedidos"
+msgstr "No orders"
+
+msgid "Haz tu primer pedido desde el Menú"
+msgstr "Place your first order from the Menu"
+
+msgid "Sin categoría"
+msgstr "No category"
+
+msgid "c/u"
+msgstr "each"

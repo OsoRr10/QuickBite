@@ -264,8 +264,8 @@ const I18N = {
   fill_credentials: "{% trans 'Completa usuario y contraseña' %}",
   welcome_tpl: "{% trans 'Bienvenido, __USER__!' %}",
   added_to_cart: "{% trans 'agregado al carrito' %}",
-  discount_applied: "{% trans 'Descuento del __PCT__% aplicado' %}",
   loading: "{% trans 'Cargando...' %}",
+  discount_applied: "{% trans 'Descuento del __PCT__% aplicado' %}",
   meal_load_error: "{% trans 'No se pudo cargar la receta' %}",
   meal_offline: "{% trans 'Sin conexión con TheMealDB' %}",
   error_connect: "{% trans 'No se pudo conectar con el servidor' %}",
@@ -306,7 +306,7 @@ function saveAuth() {
 function restoreAuth() {
   try {
     const stored = sessionStorage.getItem('quickbiteAuth') || localStorage.getItem('quickbiteAuth');
-    if (!stored) { // Si no hay credenciales guardadas, mostramos el estado de no autenticado
+    if (!stored) {
       document.getElementById('auth-status').textContent = I18N.not_authenticated;
       document.getElementById('login-btn').style.display = 'block';
       return;
@@ -392,15 +392,13 @@ function logout() {
 function initializeApp() {
   restoreAuth();
   
-  // Si tenemos AUTH (JS) o el servidor confirma sesión, evitamos ir a login por defecto
+  // Si tenemos AUTH (JS) o el servidor confirma sesión, evitamos ir a login
   let initialSection = restoreSection();
   
   if ((AUTH || SERVER_IS_AUTHENTICATED)) {
-    if (!initialSection || initialSection === 'login') { // Si no hay sección o es 'login', vamos a 'restaurants'
-      initialSection = 'restaurants';
-    }
+    if (!initialSection || initialSection === 'login') initialSection = 'restaurants';
   } else {
-    initialSection = 'login'; // Si no hay sesión ni en JS ni en el servidor, vamos a 'login'
+    initialSection = 'login';
   }
   
   showSection(initialSection);
@@ -441,7 +439,6 @@ async function loadRestaurants() {
   const grid = document.getElementById('restaurants-grid');
   try {
     const res  = await fetch(BASE + '/restaurants/', { headers: headers() });
-    if (!res.ok) throw new Error('Server Error');
     const data = await res.json();
 
     if (!data.length) {
@@ -646,7 +643,7 @@ async function loadOrders() {
         <div class="order-items-list">
           ${o.items.map(i => `${i.quantity}× ${i.product} — $${parseFloat(i.unit_price).toFixed(2)}`).join('<br>')}
         </div>
-        <div class="order-total">Total: $${o.total?.toFixed(2) ?? '—'}</div>
+        <div class="order-total">${I18N.total_label}: $${o.total?.toFixed(2) ?? '—'}</div>
       </div>
     `).join('');
   } catch (e) {

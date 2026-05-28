@@ -23,16 +23,16 @@
     <!-- Selector de idioma -->
     <form action="{% url 'set_language' %}" method="post" style="display:inline">
       {% csrf_token %}
-      {# Forzamos el retorno a la raíz limpia para que el middleware de Django aplique el nuevo prefijo sin conflictos #}
-      <input name="next" type="hidden" value="{{ request.path|slice:'3:'|default:'/' }}">
+      {# Limpiamos el prefijo de idioma actual para que Django no lo duplique en la redirección #}
+      <input name="next" type="hidden" value="{% if request.path|slice:':3' == '/en' or request.path|slice:':3' == '/es' %}{{ request.path|slice:'3:'|default:'/' }}{% else %}{{ request.path }}{% endif %}">
       <select name="language" onchange="this.form.submit()" style="
         background: var(--surface); border: 1px solid var(--border);
         color: var(--muted); padding: 5px 8px; border-radius: 8px;
         font-size: .8rem; cursor: pointer; font-family: 'DM Sans', sans-serif;
       ">
         {% get_current_language as CURRENT_LANG %}
-        <option value="es" {% if CURRENT_LANG|slice:":2" == 'es' %}selected{% endif %}>🇨🇴 ES</option>
-        <option value="en" {% if CURRENT_LANG|slice:":2" == 'en' %}selected{% endif %}>🇺🇸 EN</option>
+        <option value="es" {% if CURRENT_LANG|slice:':2' == 'es' %}selected{% endif %}>🇨🇴 ES</option>
+        <option value="en" {% if CURRENT_LANG|slice:':2' == 'en' %}selected{% endif %}>🇺🇸 EN</option>
       </select>
     </form>
   </div>
