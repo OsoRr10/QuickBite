@@ -251,6 +251,9 @@ let CART            = [];     // [{ id, name, price, qty }]
 let DISCOUNT        = 0;
 let CURRENT_SECTION = 'login';
 
+// Inyectamos el estado de autenticación desde el servidor
+const SERVER_IS_AUTHENTICATED = {{ user.is_authenticated|yesno:"true,false" }};
+
 const BASE = '/api';
 
 // ── I18N (strings usados en JS) ───────────────────────────────────────────
@@ -268,6 +271,22 @@ const I18N = {
   error_connect: "{% trans 'No se pudo conectar con el servidor' %}",
   cart_empty: "{% trans 'Carrito vacío' %}",
   order_created_tpl: "{% trans '✅ Orden #__ID__ creada! Total: $__TOTAL__' %}",
+  not_authenticated: "{% trans 'No autenticado' %}",
+  cart_is_empty: "{% trans 'El carrito está vacío' %}",
+  authenticated_as: "{% trans '👤 __USER__' %}",
+  ally_offline: "{% trans 'Ally: desconectado' %}",
+  add: "{% trans '+ Agregar' %}",
+  available: "{% trans 'disponibles' %}",
+  no_restaurants: "{% trans 'Sin restaurantes' %}",
+  add_restaurants_admin: "{% trans 'Agrega restaurantes desde el admin de Django' %}",
+  no_products: "{% trans 'Sin productos' %}",
+  add_products_admin: "{% trans 'Agrega productos desde el admin de Django' %}",
+  error_loading: "{% trans 'Error al cargar' %}",
+  cart_empty_title: "{% trans 'Carrito vacío' %}",
+  add_from_menu: "{% trans 'Agrega productos desde el Menú' %}",
+  no_orders: "{% trans 'Sin pedidos' %}",
+  first_order_msg: "{% trans 'Haz tu primer pedido desde el Menú' %}",
+  delete: "{% trans 'Eliminar' %}",
 };
 
 // ── AUTENTICACIÓN ──────────────────────────────────────────────────────────
@@ -287,11 +306,15 @@ function saveAuth() {
 function restoreAuth() {
   try {
     const stored = sessionStorage.getItem('quickbiteAuth') || localStorage.getItem('quickbiteAuth');
-    if (!stored) return;
+    if (!stored) { // Si no hay credenciales guardadas, mostramos el estado de no autenticado
+      document.getElementById('auth-status').textContent = I18N.not_authenticated;
+      document.getElementById('login-btn').style.display = 'block';
+      return;
+    }
 
     AUTH = JSON.parse(stored);
     if (AUTH?.username) {
-      document.getElementById('auth-status').textContent = `👤 ${AUTH.username}`;
+      document.getElementById('auth-status').textContent = I18N.authenticated_as.replace('__USER__', AUTH.username);
       document.getElementById('login-btn').style.display  = 'none';
       document.getElementById('logout-btn').style.display = 'block';
     }
@@ -348,7 +371,7 @@ async function login() {
 
   AUTH = { username: u, password: p };
   saveAuth();
-  document.getElementById('auth-status').textContent = `👤 ${u}`;
+  document.getElementById('auth-status').textContent = I18N.authenticated_as.replace('__USER__', u);
   document.getElementById('login-btn').style.display  = 'none';
   document.getElementById('logout-btn').style.display = 'block';
   toast(I18N.welcome_tpl.replace('__USER__', u), 'success');
@@ -359,7 +382,7 @@ function logout() {
   AUTH = null;
   saveAuth();
   CART = [];
-  document.getElementById('auth-status').textContent  = 'No autenticado';
+  document.getElementById('auth-status').textContent  = I18N.not_authenticated;
   document.getElementById('login-btn').style.display  = 'block';
   document.getElementById('logout-btn').style.display = 'none';
   updateCartCount();
@@ -368,7 +391,18 @@ function logout() {
 
 function initializeApp() {
   restoreAuth();
-  const initialSection = restoreSection() || (AUTH ? 'restaurants' : 'login');
+  
+  // Si tenemos AUTH (JS) o el servidor confirma sesión, evitamos ir a login por defecto
+  let initialSection = restoreSection();
+  
+  if ((AUTH || SERVER_IS_AUTHENTICATED)) {
+    if (!initialSection || initialSection === 'login') { // Si no hay sección o es 'login', vamos a 'restaurants'
+      initialSection = 'restaurants';
+    }
+  } else {
+    initialSection = 'login'; // Si no hay sesión ni en JS ni en el servidor, vamos a 'login'
+  }
+  
   showSection(initialSection);
   loadAllyInfo();
 }
@@ -384,16 +418,9 @@ function showSection(name) {
 
   document.getElementById('section-' + name)?.classList.add('active');
 
-  // Resaltar botón activo en la nav
-  const labelMap = {
-    restaurants: 'restaurantes',
-    products:    'menú',
-    cart:        'carrito',
-    orders:      'pedido',
-  };
-  const keyword = labelMap[name] ?? name;
+  // Resaltar botón activo usando data-section (independiente del idioma)
   document.querySelectorAll('.tab-btn').forEach(b => {
-    if (b.textContent.toLowerCase().includes(keyword)) b.classList.add('active');
+    if (b.getAttribute('data-section') === name) b.classList.add('active');
   });
 
   // Cargar datos según sección
@@ -414,10 +441,11 @@ async function loadRestaurants() {
   const grid = document.getElementById('restaurants-grid');
   try {
     const res  = await fetch(BASE + '/restaurants/', { headers: headers() });
+    if (!res.ok) throw new Error('Server Error');
     const data = await res.json();
 
     if (!data.length) {
-      grid.innerHTML = emptyState('🏪', 'Sin restaurantes', 'Agrega restaurantes desde el admin de Django');
+      grid.innerHTML = emptyState('🏪', I18N.no_restaurants, I18N.add_restaurants_admin);
       return;
     }
 
@@ -436,7 +464,7 @@ async function loadRestaurants() {
       </div>
     `).join('');
   } catch (e) {
-    grid.innerHTML = emptyState('⚠️', 'Error al cargar', I18N.error_connect);
+    grid.innerHTML = emptyState('⚠️', I18N.error_loading, I18N.error_connect);
   }
 }
 
@@ -449,7 +477,7 @@ async function loadProducts() {
     const data = await res.json();
 
     if (!data.length) {
-      grid.innerHTML = emptyState('🍽', 'Sin productos', 'Agrega productos desde el admin de Django');
+      grid.innerHTML = emptyState('🍽', I18N.no_products, I18N.add_products_admin);
       return;
     }
 
@@ -461,18 +489,18 @@ async function loadProducts() {
         <div class="card-footer">
           <div>
             <div class="price">$${parseFloat(p.price).toFixed(2)}</div>
-            <div class="stock">${p.stock} disponibles</div>
+            <div class="stock">${p.stock} ${I18N.available}</div>
           </div>
           <button class="btn-add"
             onclick="addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price})"
             ${p.stock === 0 ? 'disabled' : ''}>
-            + Agregar
+            ${I18N.add}
           </button>
         </div>
       </div>
     `).join('');
   } catch (e) {
-    grid.innerHTML = emptyState('⚠️', 'Error al cargar', I18N.error_connect);
+    grid.innerHTML = emptyState('⚠️', I18N.error_loading, I18N.error_connect);
   }
 }
 
@@ -508,14 +536,14 @@ function updateCartCount() {
 function applyDiscount() {
   DISCOUNT = parseFloat(document.getElementById('discount-pct').value) || 0;
   renderCart();
-  toast(`Descuento del ${DISCOUNT}% aplicado`, 'success');
+  toast(I18N.discount_applied.replace('__PCT__', DISCOUNT), 'success');
 }
 
 function renderCart() {
   const container = document.getElementById('cart-items-container');
 
   if (!CART.length) {
-    container.innerHTML = emptyState('🧺', 'Carrito vacío', 'Agrega productos desde el Menú');
+    container.innerHTML = emptyState('🧺', I18N.cart_empty_title, I18N.add_from_menu);
     document.getElementById('s-subtotal').textContent = '$0';
     document.getElementById('s-total').textContent    = '$0';
     return;
@@ -547,7 +575,7 @@ function renderCart() {
             <button
               onclick="removeFromCart(${idx})"
               style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem;"
-              title="Eliminar">✕</button>
+              title="${I18N.delete}">✕</button>
           </div>
         </div>
       `).join('')}
@@ -562,7 +590,7 @@ async function checkout() {
     return;
   }
   if (!CART.length) {
-    toast('El carrito está vacío', 'error');
+    toast(I18N.cart_is_empty, 'error');
     return;
   }
 
@@ -605,7 +633,7 @@ async function loadOrders() {
     const data = await res.json();
 
     if (!data.length) {
-      container.innerHTML = emptyState('📭', 'Sin pedidos', 'Haz tu primer pedido desde el Menú');
+      container.innerHTML = emptyState('📭', I18N.no_orders, I18N.first_order_msg);
       return;
     }
 
@@ -622,7 +650,7 @@ async function loadOrders() {
       </div>
     `).join('');
   } catch (e) {
-    container.innerHTML = emptyState('⚠️', 'Error al cargar', I18N.error_connect);
+    container.innerHTML = emptyState('⚠️', I18N.error_loading, I18N.error_connect);
   }
 }
 
@@ -688,14 +716,14 @@ async function loadAllyInfo() {
   if (!el) return;
   try {
     const res = await fetch(BASE + '/ally/info/');
-    if (!res.ok) { el.textContent = 'Ally: offline'; return; }
+    if (!res.ok) { el.textContent = I18N.ally_offline; return; }
     const data = await res.json();
     // Mostrar datos básicos si existen
     const name = data.service || data.name || 'Ally';
     const status = data.status || data.state || 'ok';
     el.textContent = `${name} (${status})`;
   } catch (e) {
-    el.textContent = 'Ally: offline';
+    el.textContent = I18N.ally_offline;
   }
 }
 

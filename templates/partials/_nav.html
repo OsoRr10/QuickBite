@@ -3,29 +3,36 @@
   <div class="logo">Quick<span>Bite</span></div>
 
   <div class="nav-tabs">
-    <button class="tab-btn" onclick="showSection('restaurants')">🍽 {% trans "Restaurants" %}</button>
-    <button class="tab-btn" onclick="showSection('products')">🛒 {% trans "Menu" %}</button>
-    <button class="tab-btn" onclick="showSection('cart')">🧾 {% trans "Cart" %} <span id="cart-count"></span></button>
-    <button class="tab-btn" onclick="showSection('orders')">📦 {% trans "My Orders" %}</button>
+    <button class="tab-btn" data-section="restaurants" onclick="showSection('restaurants')">🍽 {% trans "Restaurants" %}</button>
+    <button class="tab-btn" data-section="products" onclick="showSection('products')">🛒 {% trans "Menu" %}</button>
+    <button class="tab-btn" data-section="cart" onclick="showSection('cart')">🧾 {% trans "Cart" %} <span id="cart-count"></span></button>
+    <button class="tab-btn" data-section="orders" onclick="showSection('orders')">📦 {% trans "My Orders" %}</button>
   </div>
 
   <div class="auth-area">
-    <span id="auth-status">{% trans "Not authenticated" %}</span>
+    <span id="auth-status">
+      {# El JS se encargará de llenar esto para evitar conflictos con la sesión de Basic Auth #}
+      {% trans "Cargando..." %}
+    </span>
     <span id="ally-info" style="margin-left:12px; color:var(--muted); font-size:.85rem;"></span>
-    <button class="btn-sm btn-outline" onclick="showSection('login')" id="login-btn">{% trans "Login" %}</button>
+    
+    {# Ocultamos ambos por defecto para que initializeApp decida qué mostrar sin parpadeos #}
+    <button class="btn-sm btn-outline" onclick="showSection('login')" id="login-btn" style="display:none">{% trans "Login" %}</button>
     <button class="btn-sm btn-primary" onclick="logout()" id="logout-btn" style="display:none">{% trans "Logout" %}</button>
 
     <!-- Selector de idioma -->
     <form action="{% url 'set_language' %}" method="post" style="display:inline">
       {% csrf_token %}
-      <input name="next" type="hidden" value="{{ request.path }}">
+      {# Forzamos el retorno a la raíz limpia para que el middleware de Django aplique el nuevo prefijo sin conflictos #}
+      <input name="next" type="hidden" value="{{ request.path|slice:'3:'|default:'/' }}">
       <select name="language" onchange="this.form.submit()" style="
         background: var(--surface); border: 1px solid var(--border);
         color: var(--muted); padding: 5px 8px; border-radius: 8px;
         font-size: .8rem; cursor: pointer; font-family: 'DM Sans', sans-serif;
       ">
-        <option value="es" {% if LANGUAGE_CODE == 'es' %}selected{% endif %}>🇨🇴 ES</option>
-        <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>🇺🇸 EN</option>
+        {% get_current_language as CURRENT_LANG %}
+        <option value="es" {% if CURRENT_LANG|slice:":2" == 'es' %}selected{% endif %}>🇨🇴 ES</option>
+        <option value="en" {% if CURRENT_LANG|slice:":2" == 'en' %}selected{% endif %}>🇺🇸 EN</option>
       </select>
     </form>
   </div>

@@ -80,3 +80,51 @@ msgstr "Another recipe"
 
 msgid "Loading..."
 msgstr "Loading..."
+
+msgid "Debes iniciar sesión para hacer pedidos"
+msgstr "You must log in to place orders"
+
+msgid "Inicia sesión primero"
+msgstr "Log in first"
+
+msgid "Credenciales incorrectas"
+msgstr "Incorrect credentials"
+
+msgid "Completa usuario y contraseña"
+msgstr "Enter username and password"
+
+msgid "Bienvenido, __USER__!"
+msgstr "Welcome, __USER__!"
+
+msgid "agregado al carrito"
+msgstr "added to cart"
+
+msgid "Descuento del __PCT__% aplicado"
+msgstr "Discount of __PCT__% applied"
+
+msgid "No se pudo cargar la receta"
+msgstr "Could not load recipe"
+
+msgid "Sin conexión con TheMealDB"
+msgstr "No connection to TheMealDB"
+
+msgid "No se pudo conectar con el servidor"
+msgstr "Could not connect to the server"
+
+msgid "Carrito vacío"
+msgstr "Cart empty"
+
+msgid "✅ Orden #__ID__ creada! Total: $__TOTAL__"
+msgstr "✅ Order #__ID__ created! Total: $__TOTAL__"
+
+msgid "+ Agregar"
+msgstr "+ Add"
+
+msgid "disponibles"
+msgstr "available"
+
+msgid "El carrito está vacío"
+msgstr "The cart is empty"
+
+msgid "Eliminar"
+msgstr "Delete"
