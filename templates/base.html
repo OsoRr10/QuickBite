@@ -558,7 +558,7 @@ function renderCart() {
         <div class="cart-item">
           <div>
             <div class="cart-item-name">${item.name}</div>
-            <div class="cart-item-meta">$${item.price.toFixed(2)} c/u</div>
+            <div class="cart-item-meta">$${item.price.toFixed(2)} ${I18N.each_unit || 'c/u'}</div>
           </div>
           <div style="display:flex; align-items:center; gap:10px">
             <input
@@ -715,10 +715,11 @@ async function loadAllyInfo() {
     const res = await fetch(BASE + '/ally/info/');
     if (!res.ok) { el.textContent = I18N.ally_offline; return; }
     const data = await res.json();
-    // Mostrar datos básicos si existen
-    const name = data.service || data.name || 'Ally';
-    const status = data.status || data.state || 'ok';
-    el.textContent = `${name} (${status})`;
+
+    // Intentamos leer llaves comunes que el aliado podría enviar
+    const name = data.service || data.team || data.name || 'Ally';
+    const status = data.status || data.state || 'Online';
+    el.textContent = `🤝 ${name}: ${status}`;
   } catch (e) {
     el.textContent = I18N.ally_offline;
   }

@@ -17,6 +17,7 @@ def get_ally_info(timeout: int = 3) -> dict:
     """
     session = requests.Session()
     retries = Retry(total=2, backoff_factor=0.5, status_forcelist=(500, 502, 503, 504))
+    retries = Retry(total=1, backoff_factor=0.3, status_forcelist=(500, 502, 503, 504))
     session.mount("https://", HTTPAdapter(max_retries=retries))
     session.mount("http://", HTTPAdapter(max_retries=retries))
 

@@ -42,15 +42,16 @@ class SystemInfoAPIView(APIView):
     def get(self, request):
         return Response(
             {
-                "service": "QuickBite",
-                "version": "2.0.0",
-                "description": "Plataforma de pedidos de comida rápida",
+                "service": "QuickBite - Sistema de Pedidos",
+                "team": "QuickBite Team",
+                "status": "Online",
+                "version": "2.1.0",
+                "architecture": "Híbrida (Django + Flask + Nginx Gateway)",
                 "endpoints": {
                     "restaurants": "/api/restaurants/",  # servido por Flask
                     "products": "/api/products/",
                     "orders": "/api/orders/",
                 },
-                "team": "QuickBite Team",
             }
         )
 
