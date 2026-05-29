@@ -89,3 +89,6 @@ msgstr "Sin categoría"
 
 msgid "c/u"
 msgstr "c/u"
+
+msgid "Descuento del __PCT__% aplicado"
+msgstr "Descuento del __PCT__% aplicado"
