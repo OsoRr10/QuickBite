@@ -81,9 +81,6 @@ msgstr "Otra receta"
 msgid "Loading..."
 msgstr "Cargando..."
 
-msgid "Not authenticated"
-msgstr "No autenticado"
-
 msgid "👤 __USER__"
 msgstr "👤 __USER__"
 
@@ -101,9 +98,3 @@ msgstr "Sin categoría"
 
 msgid "c/u"
 msgstr "c/u"
-
-msgid "Total"
-msgstr "Total"
-
-msgid "Chef's Inspiration"
-msgstr "Inspiración del Chef"
