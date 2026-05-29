@@ -81,6 +81,9 @@ msgstr "Otra receta"
 msgid "👤 __USER__"
 msgstr "👤 __USER__"
 
+msgid "Descuento del __PCT__% aplicado"
+msgstr "Descuento del __PCT__% aplicado"
+
 msgid "Add products from the Menu"
 msgstr "Agrega productos desde el Menú"
 
