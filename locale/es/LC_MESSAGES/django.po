@@ -33,12 +33,6 @@ msgstr "Carrito"
 msgid "My Orders"
 msgstr "Mis Pedidos"
 
-msgid "Not authenticated"
-msgstr "No autenticado"
-
-msgid "Login"
-msgstr "Iniciar sesión"
-
 msgid "Logout"
 msgstr "Salir"
 
@@ -84,11 +78,8 @@ msgstr "👤 __USER__"
 msgid "Descuento del __PCT__% aplicado"
 msgstr "Descuento del __PCT__% aplicado"
 
-msgid "Add products from the Menu"
-msgstr "Agrega productos desde el Menú"
-
-msgid "Sin pedidos"
-msgstr "Sin pedidos"
+msgid "Not authenticated"
+msgstr "No autenticado"
 
 msgid "Haz tu primer pedido desde el Menú"
 msgstr "Haz tu primer pedido desde el Menú"
