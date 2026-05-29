@@ -1,11 +1,100 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}QuickBite{% endblock %}
+{% block title %}{% trans "Menu" %} - QuickBite{% endblock %}
 
 {% block content %}
-  {% include "partials/_login.html" %}
-  {% include "partials/_restaurants.html" %}
-  {% include "partials/_products.html" %}
-  {% include "partials/_cart.html" %}
-  {% include "partials/_orders.html" %}
+<!-- ── SECCIÓN: LOGIN ──────────────────────────────── -->
+<section id="section-login" class="section">
+  <div class="login-card">
+    <h2>{% trans "Welcome" %}</h2>
+    <p>{% trans "Sign in with your Django account to place orders." %}</p>
+    
+    <div class="field">
+      <label for="username">{% trans "Username" %}</label>
+      <input type="text" id="username" placeholder="admin" />
+    </div>
+    <div class="field">
+      <label for="password">{% trans "Password" %}</label>
+      <input type="password" id="password" placeholder="••••••••" />
+    </div>
+    
+    <button class="btn-full" onclick="login()">{% trans "Sign In" %}</button>
+  </div>
+</section>
+
+<!-- ── SECCIÓN: RESTAURANTES ────────────────────────── -->
+<section id="section-restaurants" class="section">
+  <div class="sec-header">
+    <h2>{% trans "Restaurants" %}</h2>
+    <p>{% trans "All restaurants available on the platform" %}</p>
+  </div>
+  <div id="restaurants-grid" class="grid"></div>
+</section>
+
+<!-- ── SECCIÓN: MENÚ / PRODUCTOS ───────────────────── -->
+<section id="section-products" class="section">
+  <!-- Inspiración del Chef (TheMealDB via Adapter) -->
+  <div class="card" style="margin-bottom: 40px; border-color: var(--accent2); background: rgba(255,179,71,0.05);">
+    <div class="card-badge" style="background: var(--accent2); color: #000;">✨ {% trans "Chef's Inspiration" %}</div>
+    <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+      <img id="meal-thumb" src="" alt="Meal" style="width: 120px; height: 120px; border-radius: 12px; object-fit: cover; display: none;">
+      <div style="flex: 1; min-width: 200px;">
+        <h3 id="meal-name" style="font-size: 1.4rem;"></h3>
+        <p id="meal-meta" style="margin-bottom: 10px; font-weight: 600; color: var(--accent2);"></p>
+        <p id="meal-instructions" style="font-style: italic;"></p>
+      </div>
+      <button class="btn-outline" onclick="loadRandomMeal()">🔄 {% trans "Another recipe" %}</button>
+    </div>
+  </div>
+
+  <div class="sec-header">
+    <h2>{% trans "Menu" %}</h2>
+    <p>{% trans "Add products to your cart and place your order" %}</p>
+  </div>
+  <div id="products-grid" class="grid"></div>
+</section>
+
+<!-- ── SECCIÓN: CARRITO ────────────────────────────── -->
+<section id="section-cart" class="section">
+  <div class="sec-header">
+    <h2>{% trans "Cart" %}</h2>
+    <p>{% trans "Review your order before confirming" %}</p>
+  </div>
+
+  <div class="cart-layout">
+    <div id="cart-items-container"></div>
+
+    <aside class="order-summary">
+      <h3>{% trans "Order Summary" %}</h3>
+      <div class="summary-row">
+        <span>{% trans "Subtotal" %}</span>
+        <span id="s-subtotal">$0</span>
+      </div>
+      
+      <div class="discount-input">
+        <input type="number" id="discount-pct" placeholder="{% trans 'Discount %' %}" min="0" max="100" />
+        <button class="btn-sm btn-outline" onclick="applyDiscount()">{% trans "Apply" %}</button>
+      </div>
+
+      <div class="summary-row total">
+        <span>{% trans "Total" %}</span>
+        <span id="s-total">$0</span>
+      </div>
+
+      <button class="btn-full" onclick="checkout()" style="margin-top: 20px;">
+        🚀 {% trans "Confirm Order" %}
+      </button>
+    </aside>
+  </div>
+</section>
+
+<!-- ── SECCIÓN: MIS ÓRDENES ────────────────────────── -->
+<section id="section-orders" class="section">
+  <div class="sec-header">
+    <h2>{% trans "My Orders" %}</h2>
+    <p>{% trans "Order History" %}</p>
+  </div>
+  <div id="orders-container"></div>
+</section>
 {% endblock %}

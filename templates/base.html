@@ -271,7 +271,7 @@ const I18N = {
   error_connect: "{% trans 'No se pudo conectar con el servidor' %}",
   cart_empty: "{% trans 'Carrito vacío' %}",
   order_created_tpl: "{% trans '✅ Orden #__ID__ creada! Total: $__TOTAL__' %}",
-  not_authenticated: "{% trans 'No autenticado' %}",
+  not_authenticated: "{% trans 'Not authenticated' %}",
   cart_is_empty: "{% trans 'El carrito está vacío' %}",
   authenticated_as: "{% trans '👤 __USER__' %}",
   ally_offline: "{% trans 'Ally: desconectado' %}",
@@ -287,6 +287,9 @@ const I18N = {
   no_orders: "{% trans 'Sin pedidos' %}",
   first_order_msg: "{% trans 'Haz tu primer pedido desde el Menú' %}",
   delete: "{% trans 'Eliminar' %}",
+  no_category: "{% trans 'Sin categoría' %}",
+  each_unit: "{% trans 'c/u' %}",
+  total_label: "{% trans 'Total' %}",
 };
 
 // ── AUTENTICACIÓN ──────────────────────────────────────────────────────────
@@ -558,7 +561,7 @@ function renderCart() {
         <div class="cart-item">
           <div>
             <div class="cart-item-name">${item.name}</div>
-            <div class="cart-item-meta">$${item.price.toFixed(2)} c/u</div>
+            <div class="cart-item-meta">$${item.price.toFixed(2)} ${I18N.each_unit}</div>
           </div>
           <div style="display:flex; align-items:center; gap:10px">
             <input
@@ -643,7 +646,7 @@ async function loadOrders() {
         <div class="order-items-list">
           ${o.items.map(i => `${i.quantity}× ${i.product} — $${parseFloat(i.unit_price).toFixed(2)}`).join('<br>')}
         </div>
-        <div class="order-total">Total: $${o.total?.toFixed(2) ?? '—'}</div>
+        <div class="order-total">${I18N.total_label}: $${o.total?.toFixed(2) ?? '—'}</div>
       </div>
     `).join('');
   } catch (e) {
