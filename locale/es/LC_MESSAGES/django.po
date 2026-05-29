@@ -78,9 +78,6 @@ msgstr "Inspiración del Chef"
 msgid "Another recipe"
 msgstr "Otra receta"
 
-msgid "Loading..."
-msgstr "Cargando..."
-
 msgid "👤 __USER__"
 msgstr "👤 __USER__"
 
