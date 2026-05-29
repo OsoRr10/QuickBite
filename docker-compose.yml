@@ -73,7 +73,7 @@ services:
       DB_NAME:     quickbite
       DB_USER:     quickbite
       DB_PASSWORD: quickbite
-      ALLY_URL:    http://IP_DE_TU_ALIADO/api/endpoint_del_aliado/
+      ALLY_URL:    http://54.200.100.50/api/info/
       REDIS_URL:   redis://redis:6379/0
       DEBUG:       "false"
     depends_on:
