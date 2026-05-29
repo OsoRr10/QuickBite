@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Menu" %} - QuickBite{% endblock %}
+
+{% block content %}
+  <div id="content-area">
+    {% include "partials/_login.html" %}
+    {% include "partials/_restaurants.html" %}
+    {% include "partials/_products.html" %}
+    {% include "partials/_cart.html" %}
+    {% include "partials/_orders.html" %}
+  </div>
+{% endblock %}
